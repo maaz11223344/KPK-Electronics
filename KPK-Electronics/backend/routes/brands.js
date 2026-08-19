@@ -1,0 +1,10 @@
+import express from 'express';
+import { query } from '../db.js';
+import { brandView } from '../utils/dbHelpers.js';
+import { protect, adminOnly } from '../middleware/auth.js';
+const router=express.Router();
+router.get('/', async (req,res)=>{ const sql=req.query.all==='true'?'SELECT * FROM brands ORDER BY name ASC':'SELECT * FROM brands WHERE active=1 ORDER BY name ASC'; res.json((await query(sql)).map(brandView)); });
+router.post('/',protect,adminOnly,async(req,res)=>{try{const {name,slug,country,description,logo,active=true}=req.body;const r=await query('INSERT INTO brands (name,slug,country,description,logo,active) VALUES (?,?,?,?,?,?)',[name,slug,country||null,description||null,logo||null,active?1:0]);res.status(201).json(brandView((await query('SELECT * FROM brands WHERE id=?',[r.insertId]))[0]));}catch(e){res.status(400).json({message:'Brand creation failed',error:e.message});}});
+router.put('/:id',protect,adminOnly,async(req,res)=>{try{const allowed=['name','slug','country','description','logo','active'];const sets=[],vals=[];for(const k of allowed)if(req.body[k]!==undefined){sets.push(`${k}=?`);vals.push(k==='active'?(req.body[k]?1:0):req.body[k]);}if(!sets.length)return res.status(400).json({message:'No changes supplied'});vals.push(req.params.id);await query(`UPDATE brands SET ${sets.join(',')} WHERE id=?`,vals);const row=(await query('SELECT * FROM brands WHERE id=?',[req.params.id]))[0];if(!row)return res.status(404).json({message:'Brand not found'});res.json(brandView(row));}catch(e){res.status(400).json({message:'Brand update failed',error:e.message});}});
+router.delete('/:id',protect,adminOnly,async(req,res)=>{await query('DELETE FROM brands WHERE id=?',[req.params.id]);res.json({message:'Brand deleted'});});
+export default router;

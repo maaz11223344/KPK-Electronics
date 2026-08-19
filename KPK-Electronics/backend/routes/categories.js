@@ -1,0 +1,10 @@
+import express from 'express';
+import { query } from '../db.js';
+import { categoryView } from '../utils/dbHelpers.js';
+import { protect, adminOnly } from '../middleware/auth.js';
+const router=express.Router();
+router.get('/',async(req,res)=>{const sql=req.query.all==='true'?'SELECT * FROM categories ORDER BY name ASC':'SELECT * FROM categories WHERE active=1 ORDER BY name ASC';res.json((await query(sql)).map(categoryView));});
+router.post('/',protect,adminOnly,async(req,res)=>{try{const {name,slug,icon,description,active=true}=req.body;const r=await query('INSERT INTO categories (name,slug,icon,description,active) VALUES (?,?,?,?,?)',[name,slug,icon||null,description||null,active?1:0]);res.status(201).json(categoryView((await query('SELECT * FROM categories WHERE id=?',[r.insertId]))[0]));}catch(e){res.status(400).json({message:'Category creation failed',error:e.message});}});
+router.put('/:id',protect,adminOnly,async(req,res)=>{try{const allowed=['name','slug','icon','description','active'];const sets=[],vals=[];for(const k of allowed)if(req.body[k]!==undefined){sets.push(`${k}=?`);vals.push(k==='active'?(req.body[k]?1:0):req.body[k]);}if(!sets.length)return res.status(400).json({message:'No changes supplied'});vals.push(req.params.id);await query(`UPDATE categories SET ${sets.join(',')} WHERE id=?`,vals);const row=(await query('SELECT * FROM categories WHERE id=?',[req.params.id]))[0];if(!row)return res.status(404).json({message:'Category not found'});res.json(categoryView(row));}catch(e){res.status(400).json({message:'Category update failed',error:e.message});}});
+router.delete('/:id',protect,adminOnly,async(req,res)=>{await query('DELETE FROM categories WHERE id=?',[req.params.id]);res.json({message:'Category deleted'});});
+export default router;

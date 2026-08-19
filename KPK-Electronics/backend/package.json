@@ -1,0 +1,26 @@
+{
+  "name": "kpk-electronics-api",
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "seed": "node seed.js",
+    "setup": "node setup.js"
+  },
+  "dependencies": {
+    "bcryptjs": "2.4.3",
+    "cors": "2.8.5",
+    "dotenv": "16.6.1",
+    "express": "^4.22.2",
+    "express-rate-limit": "7.5.0",
+    "helmet": "8.1.0",
+    "jsonwebtoken": "9.0.2",
+    "morgan": "^1.11.0",
+    "multer": "^2.2.0",
+    "mysql2": "^3.14.3"
+  },
+  "devDependencies": {
+    "nodemon": "3.1.10"
+  }
+}
